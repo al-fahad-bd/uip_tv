@@ -14,7 +14,8 @@ class PostRepositoryImpl implements PostRepository {
     try {
       // Fetch posts from the API
       final posts = await remoteDataSource.fetchPosts();
-      final postEntities = posts.map((post) => PostMapper.toEntity(post)).toList();
+      final postEntities =
+          posts.map((post) => PostMapper.toEntity(post)).toList();
 
       // Save posts to local storage
       final postsBox = Hive.box<PostEntity>('postsBox');
