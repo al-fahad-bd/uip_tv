@@ -17,55 +17,51 @@ class PostScreen extends StatefulWidget {
 }
 
 class _PostScreenState extends State<PostScreen> {
-  bool isOffline = false;
+  bool? isOffline; // Null means checking status
 
   @override
   void initState() {
     super.initState();
     _checkConnectivity();
   }
-
-  // void _checkConnectivity() async {
-  //   var connectivityResult = await Connectivity().checkConnectivity();
-  //   setState(() {
-  //     isOffline = connectivityResult == ConnectivityResult.none;
-  //   });
-
-  //   Connectivity().onConnectivityChanged.listen((result) {
-  //     setState(() {
-  //       isOffline = result == ConnectivityResult.none;
-  //     });
-  //   });
-  // }
+  
   void _checkConnectivity() async {
-  var connectivityResult = await Connectivity().checkConnectivity();
-  bool hasNetwork = connectivityResult != ConnectivityResult.none;
+    List<ConnectivityResult> connectivityResults =
+        await Connectivity().checkConnectivity();
+    bool hasNetwork =
+        connectivityResults.isNotEmpty &&
+        !connectivityResults.contains(ConnectivityResult.none);
 
-  // Manually verify by attempting to reach Google
-  try {
-    final result = await InternetAddress.lookup('google.com');
-    hasNetwork = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-  } catch (_) {
-    hasNetwork = false;
-  }
-
-  setState(() {
-    isOffline = !hasNetwork;
-  });
-
-  Connectivity().onConnectivityChanged.listen((result) async {
-    bool online = result != ConnectivityResult.none;
+    // Manually verify by attempting to reach Google
     try {
-      final test = await InternetAddress.lookup('google.com');
-      online = test.isNotEmpty && test[0].rawAddress.isNotEmpty;
+      final result = await InternetAddress.lookup('google.com');
+      hasNetwork = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
-      online = false;
+      hasNetwork = false;
     }
-    setState(() {
-      isOffline = !online;
+
+    if (mounted) {
+      setState(() {
+        isOffline = !hasNetwork;
+      });
+    }
+
+    Connectivity().onConnectivityChanged.listen((results) async {
+      bool online =
+          results.isNotEmpty && !results.contains(ConnectivityResult.none);
+      try {
+        final test = await InternetAddress.lookup('google.com');
+        online = test.isNotEmpty && test[0].rawAddress.isNotEmpty;
+      } catch (_) {
+        online = false;
+      }
+      if (mounted) {
+        setState(() {
+          isOffline = !online;
+        });
+      }
     });
-  });
-}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,19 +82,27 @@ class _PostScreenState extends State<PostScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            color: isOffline ? Colors.redAccent : Colors.green,
-            padding: const EdgeInsets.all(8),
-            child: Center(
-              child: Text(
-                isOffline
-                    ? "You're offline. Showing cached posts."
-                    : "You're online. Fetching latest posts.",
-                style: const TextStyle(color: Colors.white),
+          if (isOffline == null)
+            Container(
+              width: double.infinity,
+              color: Colors.grey, // Neutral color while checking status
+              padding: const EdgeInsets.all(8),
+              child: const Center(
+                child: Text("Checking network...", style: TextStyle(color: Colors.white)),
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              color: isOffline! ? Colors.redAccent : Colors.green,
+              padding: const EdgeInsets.all(8),
+              child: Center(
+                child: Text(
+                  isOffline! ? "You're offline. Showing cached posts." : "You're online. Fetching latest posts.",
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ),
-          ),
           Expanded(
             child: BlocBuilder<PostBloc, PostState>(
               builder: (context, state) {
