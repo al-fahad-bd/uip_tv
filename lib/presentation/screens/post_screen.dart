@@ -79,7 +79,7 @@ class _PostScreenState extends State<PostScreen> {
         title: Center(child: Text('Posts', style: ThemeClass.headingTextStyle)),
         backgroundColor: Colors.black54,
         elevation: 0,
-        actions: [Icon(Icons.mail, color: Colors.white, size: 16)],
+        actions: [Icon(Icons.mail, color: Colors.white, size: 18)],
   
       ),
       body: Column(
